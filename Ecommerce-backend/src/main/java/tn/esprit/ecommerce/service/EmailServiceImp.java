@@ -30,12 +30,12 @@ public class EmailServiceImp {
             helper.setSubject(subject);
             helper.setText(body, true);
         } catch (MessagingException e) {
+            // TODO: Log the exception and provide a meaningful error message
             e.printStackTrace();
         }
 
         // Configure the JavaMailSenderImpl with the app password
-        if (emailSender instanceof JavaMailSenderImpl) {
-            JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) emailSender;
+        if (emailSender instanceof JavaMailSenderImpl mailSenderImpl) {
             mailSenderImpl.setUsername(emailUsername);
             mailSenderImpl.setPassword(emailAppPassword);
         }

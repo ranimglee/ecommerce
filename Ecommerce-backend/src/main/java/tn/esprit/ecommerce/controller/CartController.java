@@ -40,6 +40,7 @@ public class CartController {
             return updatedCart;
         } catch (Exception e) {
             // Log the exception for debugging
+            // TODO: Replace System.err with a proper logging mechanism (e.g., SLF4J or Logback).
             System.err.println("Erreur lors de l'ajout du produit au panier: " + e.getMessage());
             throw new RuntimeException("Erreur lors de l'ajout du produit au panier", e);
         }
@@ -53,6 +54,7 @@ public class CartController {
         if (user == null) {
             throw new RuntimeException("Utilisateur non trouvé");
         }
+        // TODO: Validate productId and quantity, similar to addProductToCart.
         return cartService.updateProductQuantity(user, productId, quantity);
     }
 
@@ -62,6 +64,7 @@ public class CartController {
         if (user == null) {
             throw new RuntimeException("Utilisateur non trouvé");
         }
+        // TODO: Validate productId to ensure it is not null or empty.
         return cartService.removeProductFromCart(user, productId);
     }
 
@@ -72,6 +75,7 @@ public class CartController {
             return null;
         }
         String username = authentication.getName();
+        // TODO: Handle potential null return from userService.findByUsername.
         return userService.findByUsername(username);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 
+// TODO: attention to spelling mistakes
 public enum BusinessErrorCodes {
     NO_CODE(0, NOT_IMPLEMENTED, "No code"),
     INCORRECT_CURRENT_PASSWORD(300, BAD_REQUEST, "Current password is incorrect"),

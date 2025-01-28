@@ -33,6 +33,8 @@ public class ProductService {
                               Category category) {
         try {
             // Save the image to the server
+            // TODO: Add validation for `name`, `description`, `price`, and `quantity` (e.g., non-null, positive values).
+            // TODO: Add a request product DTO
             String fileName = fileNamingUtil.nameFile(imageFile);
             Path destinationPath = Paths.get(uploadProductImages, fileName);
             Files.copy(imageFile.getInputStream(), destinationPath);

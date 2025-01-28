@@ -24,9 +24,15 @@ public class Cart {
     @DBRef
     private List<CartItem> cartItems = new ArrayList<>();  // Initialize as an empty list
 
+    /**
+     * Calculate the total price of the cart.
+     *
+     * @return The total price of all items in the cart.
+     */
     public double getTotal() {
         return cartItems.stream()
                 .mapToDouble(CartItem::getSousTotal)
                 .sum();
+        // TODO: Handle cases where cartItems or getSousTotal might throw exceptions (e.g., null values).
     }
 }

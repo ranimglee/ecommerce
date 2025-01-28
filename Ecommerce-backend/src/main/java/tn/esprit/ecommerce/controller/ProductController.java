@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
+// TODO: use only one language when writing your code
 @RequestMapping( "produit")
 @RequiredArgsConstructor
 public class ProductController {
@@ -28,6 +29,8 @@ private final ProductService productService;
             @RequestParam MultipartFile imageFile,
             @RequestParam Category category) {
 
+        // TODO: Validate inputs (e.g., check if name, description, or price are valid).
+        // TODO: Use DTO for adding a product (e.g., addProductRequest).
         Product product = productService.addProduct(name, description, quantity, price, imageFile, category);
         return ResponseEntity.ok(product);
     }

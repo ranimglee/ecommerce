@@ -32,6 +32,9 @@ public class Order {
     private List<OrderLine> orderLines;
 
 
+    /**
+     * Calculates the total price for the order based on the order lines.
+     */
     public void calculateTotal() {
         if (orderLines != null) {
             this.total = orderLines.stream()

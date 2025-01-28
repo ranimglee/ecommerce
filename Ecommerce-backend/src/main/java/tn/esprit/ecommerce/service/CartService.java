@@ -22,7 +22,7 @@ public class CartService {
 
     // Ajouter un produit au panier
     public Cart addProductToCart(User user, String productId, int quantity) {
-
+        // TODO: Validate that the quantity is greater than 0 before proceeding.
         Cart cart = cartRepository.findByUser(user)
                 .orElseGet(() -> createNewCart(user));
 
@@ -51,6 +51,7 @@ public class CartService {
     }
 
     public Cart updateProductQuantity(User user, String productId, int newQuantity) {
+        // TODO: Validate that the newQuantity is greater than or equal to 0.
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Panier non trouvé"));
 
@@ -67,6 +68,7 @@ public class CartService {
     }
 
     public Cart removeProductFromCart(User user, String productId) {
+        // TODO: Validate that the user is not null before creating a cart.
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Panier non trouvé"));
 

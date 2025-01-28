@@ -36,12 +36,14 @@ public class OrderService {
         Order order = new Order();
         order.setUser(user);
         order.setOrderLines(orderLines);
+        // TODO: Calculate and set the total for the order
         order.setStatus(OrderStatus.PENDING);  // Or any initial status for a new order
 
         // Save the order
         orderRepository.save(order);
 
         // Optionally, you can clear the cart after placing the order
+        // TODO: Consider if cart clearing logic should be in a separate method for better code maintenance (e.g., deleteCartAfterCommand).
         cartRepository.delete(cart); // Clear the cart
 
         return order;
@@ -68,10 +70,11 @@ public class OrderService {
     }
 
     private OrderLine convertToOrderLine(CartItem cartItem) {
-        OrderLine ligneorder = new OrderLine();
-        ligneorder.setProduct(cartItem.getProduct());
-        ligneorder.setQuantity(cartItem.getQuantity());
-        ligneorder.setSousTotal(cartItem.getSousTotal());
-        return ligneorder;
+        // TODO: Validate cartItem properties (e.g., ensure product and quantity are not null)
+        OrderLine ligneOrder = new OrderLine();
+        ligneOrder.setProduct(cartItem.getProduct());
+        ligneOrder.setQuantity(cartItem.getQuantity());
+        ligneOrder.setSousTotal(cartItem.getSousTotal());
+        return ligneOrder;
     }
 }

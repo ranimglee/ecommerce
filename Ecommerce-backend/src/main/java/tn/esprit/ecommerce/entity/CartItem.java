@@ -12,16 +12,23 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Builder
 @Document(collection = "cart_items")
 public class CartItem {
-        @Id
-        private String id;
+    @Id
+    private String id;
 
-        @DBRef
-        private Product product;
+    @DBRef
+    private Product product;
 
-        private int quantity;
+    private int quantity;
 
-        public double getSousTotal() {
-            return product.getPrice() * quantity;
-        }
+
+    /**
+     * Calculates the subtotal price for this cart item.
+     *
+     * @return The subtotal price based on the product price and quantity.
+     */
+    public double getSousTotal() {
+        // TODO: Handle cases where the product or product price might be null.
+        return product.getPrice() * quantity;
+    }
 
 }

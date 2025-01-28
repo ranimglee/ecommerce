@@ -88,6 +88,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionResponse> handleException(Exception exp) {
         // log the exception
+        // TODO: Replace printStackTrace() with a proper logging mechanism (e.g., SLF4J or Logback).
         exp.printStackTrace();
 
         return ResponseEntity

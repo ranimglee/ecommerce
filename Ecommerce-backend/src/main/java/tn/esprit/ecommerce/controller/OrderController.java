@@ -19,6 +19,7 @@ public class OrderController {
     private final OrderRepository orderRepository;
     private final CartController cartController;
 
+    // TODO: Ensure that the @Secured annotations are correctly enabled in the security configuration.
     //@Secured("ROLE_ADMIN")
     @GetMapping("/admin/get-all-orders")
     public List<Order> getAllOrders() {
@@ -38,7 +39,7 @@ public class OrderController {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-
+        // TODO: Validate the `cart` object to ensure it contains valid data (e.g., non-empty product list).
         Order commande = orderService.passCommand(user, cart);
         return new ResponseEntity<>(commande, HttpStatus.CREATED);
     }
@@ -49,7 +50,7 @@ public class OrderController {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-
+        // TODO: Validate the `orderId` parameter to ensure it is not null or empty.
         boolean isCanceled = orderService.cancelOrder(user, orderId);
         if (isCanceled) {
             return new ResponseEntity<>("Order canceled successfully", HttpStatus.OK);

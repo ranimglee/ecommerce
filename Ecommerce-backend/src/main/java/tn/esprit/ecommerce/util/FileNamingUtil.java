@@ -16,12 +16,14 @@ import java.util.UUID;
 public class FileNamingUtil {
 
     public String nameFile(MultipartFile multipartFile) {
+        // TODO: Validate the MultipartFile to ensure it is not null or empty.
         String originalFileName = StringUtils.cleanPath(Objects.requireNonNull(multipartFile.getOriginalFilename()));
         String fileExtension = getFileExtension(originalFileName);
         return UUID.randomUUID().toString() + fileExtension;
     }
 
     private String getFileExtension(String filename) {
+        // TODO: Validate the filename to ensure it has a proper extension.
         return filename.substring(filename.lastIndexOf('.'));
     }
 
@@ -33,6 +35,7 @@ public class FileNamingUtil {
         try (InputStream inputStream = multipartFile.getInputStream()) {
             Path filePath = uploadPath.resolve(filename);
             Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+            // TODO: Replace System.out.println with proper logging.
             System.out.println("File copied to: " + filePath.toString());
         } catch (IOException e) {
             throw new IOException("Could not save file", e);

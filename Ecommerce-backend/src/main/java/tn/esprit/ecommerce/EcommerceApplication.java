@@ -5,8 +5,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
-import tn.esprit.ecommerce.Role.Role;
-import tn.esprit.ecommerce.Role.RoleRepository;
+import tn.esprit.ecommerce.entity.Role;
+import tn.esprit.ecommerce.repository.RoleRepository;
 
 @SpringBootApplication
 @EnableAsync

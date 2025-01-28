@@ -1,7 +1,7 @@
-package tn.esprit.ecommerce.User;
+package tn.esprit.ecommerce.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.security.core.userdetails.UserDetails;
+import tn.esprit.ecommerce.entity.User;
 
 import java.util.Optional;
 

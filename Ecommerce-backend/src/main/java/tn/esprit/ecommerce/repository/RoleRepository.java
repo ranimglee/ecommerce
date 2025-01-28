@@ -1,6 +1,7 @@
-package tn.esprit.ecommerce.Role;
+package tn.esprit.ecommerce.repository;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
+import tn.esprit.ecommerce.entity.Role;
 
 import java.util.Optional;
 

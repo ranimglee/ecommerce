@@ -1,4 +1,4 @@
-package tn.esprit.ecommerce.User;
+package tn.esprit.ecommerce.request;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;

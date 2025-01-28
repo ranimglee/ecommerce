@@ -1,15 +1,16 @@
-package tn.esprit.ecommerce.User;
+package tn.esprit.ecommerce.entity;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import tn.esprit.ecommerce.Role.Role;
 
 import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -27,12 +28,13 @@ public class User implements UserDetails , Principal {
     private String lastName;
     private String email;
     private String password;
-    private String ConfirmationToken;
+    private String confirmationToken;
     private boolean enabled;
 
     @DBRef
     private List<Role> roles;
 
+    private List<Order> orders;
 
     @Override
     public boolean isEnabled() {
@@ -61,8 +63,7 @@ public class User implements UserDetails , Principal {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
-    }
+        return this.roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());    }
 
     @Override
     public String getName() {

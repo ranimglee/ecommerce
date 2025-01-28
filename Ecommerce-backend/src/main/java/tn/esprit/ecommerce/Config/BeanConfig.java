@@ -1,4 +1,4 @@
-package tn.esprit.ecommerce.Config;
+package tn.esprit.ecommerce.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

@@ -10,6 +10,8 @@ import tn.esprit.ecommerce.repository.RoleRepository;
 
 @SpringBootApplication
 @EnableAsync
+
+
 public class EcommerceApplication {
 
     public static void main(String[] args) {

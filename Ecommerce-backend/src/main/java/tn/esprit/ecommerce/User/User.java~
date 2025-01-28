@@ -4,14 +4,12 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import tn.esprit.ecommerce.Role.Role;
 
 import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -63,9 +61,7 @@ public class User implements UserDetails , Principal {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.roles.stream()
-                .map(r-> new SimpleGrantedAuthority(r.getName()))
-                .collect(Collectors.toList());
+        return List.of();
     }
 
     @Override

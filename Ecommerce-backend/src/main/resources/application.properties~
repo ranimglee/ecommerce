@@ -12,4 +12,3 @@ spring.mail.username=ranim.abassi20@gmail.com
 spring.mail.app-password=pzaz qckt qbac nsph
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
-logging.level.org.springframework.security=DEBUG

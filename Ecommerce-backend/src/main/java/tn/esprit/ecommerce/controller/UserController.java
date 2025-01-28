@@ -7,10 +7,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.request.AuthenticationRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
 import tn.esprit.ecommerce.request.RegistrationRequest;
-import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.repository.UserRepository;
 import tn.esprit.ecommerce.service.UserService;
 

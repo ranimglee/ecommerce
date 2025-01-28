@@ -4,9 +4,6 @@ server.servlet.context-path=/api/v1/
 
 application.security.jwt.secret-key=q8Va3nhxgCqiYyVfjlvz63thFtmxOHjNq8Va3nhxgCqiYyVfjlvz63thFtmxOHjN
 application.security.jwt.expiration=86400
-springdoc.swagger-ui.enabled=true
-logging.level.org.springframework.security=DEBUG
-
 
 ##mail##
 spring.mail.host=smtp.gmail.com
@@ -15,11 +12,3 @@ spring.mail.username=ranim.abassi20@gmail.com
 spring.mail.app-password=pzaz qckt qbac nsph
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
-
-
-##path image##
-spring.servlet.multipart.enabled=true
-spring.servlet.multipart.max-file-size=10MB
-spring.servlet.multipart.max-request-size=10MB
-uploadProductImages=C:/xampp/htdocs/imagesEcom
-

@@ -1,4 +1,4 @@
-package tn.esprit.ecommerce.config;
+package tn.esprit.ecommerce.Config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req->
                         req.requestMatchers(
-
+                                        "/auth/**",
 
                                         "/v3/api-docs",
                                         "/v3/api-docs/**",
@@ -39,13 +39,9 @@ public class SecurityConfig {
                                         "/configuration/security",
                                         "/swagger-ui/**",
                                         "/webjars/**",
-                                        "/swagger-ui.html",
-                                        "/api/v1/auth/confirm-account/**",
-                                        "/auth/**"
+                                        "/swagger-ui.html"
                                 ).permitAll()
-
                                 .anyRequest().authenticated()
-
                 ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

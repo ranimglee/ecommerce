@@ -5,11 +5,15 @@ import jakarta.mail.internet.MimeMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tn.esprit.ecommerce.JWT.JwtService;
@@ -20,7 +24,9 @@ import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.repository.UserRepository;
 import tn.esprit.ecommerce.request.AuthenticationRequest;
 import tn.esprit.ecommerce.request.RegistrationRequest;
+import tn.esprit.ecommerce.request.UserProfileRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
+import tn.esprit.ecommerce.response.UserProfileResponse;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -223,6 +229,49 @@ public class UserService {
         user.setPasswordResetToken(null);
         user.setTokenExpiry(null);
         userRepository.save(user);
+    }
+
+    public User updateUserProfile(UserProfileRequest request) {
+        // Retrieve the currently authenticated user’s email from SecurityContext
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = userDetails.getUsername();
+
+        // Find the user by email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Update the user's profile
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail()); // Update email if needed (make sure it's not already in use)
+
+        return userRepository.save(user);
+    }
+
+
+    public User getUserProfile() {
+        // Retrieve the currently authenticated user’s email from SecurityContext
+        UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = userDetails.getUsername();
+
+        // Find the user by email
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+    public void deleteUserAccount(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        userRepository.delete(user);
+    }
+
+    public Page<User> listAllClients(Pageable pageable) {
+        // Get the "CLIENT" role from the role repository
+        var clientRole = roleRepository.findByName("CLIENT")
+                .orElseThrow(() -> new RuntimeException("Role CLIENT not found"));
+
+        // Find all users that have the "CLIENT" role, with pagination
+        return userRepository.findByRolesContaining(clientRole, pageable);
     }
 
 

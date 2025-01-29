@@ -3,6 +3,10 @@ package tn.esprit.ecommerce.controller;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,11 +14,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.request.AuthenticationRequest;
+import tn.esprit.ecommerce.request.UserProfileRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
 import tn.esprit.ecommerce.request.RegistrationRequest;
 import tn.esprit.ecommerce.repository.UserRepository;
+import tn.esprit.ecommerce.response.UserProfileResponse;
 import tn.esprit.ecommerce.service.UserService;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -77,6 +84,43 @@ private final UserService userService;
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
         }
     }
+
+    @PutMapping("/update-profile")
+    public ResponseEntity<User> updateProfile(@RequestBody UserProfileRequest request) {
+        User updatedUser = userService.updateUserProfile(request);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+
+    @GetMapping("/my-profile")
+    public ResponseEntity<User> getProfile() {
+        // Retrieve the authenticated user
+        User user = userService.getUserProfile();
+        return ResponseEntity.ok(user);
+    }
+
+    // Delete user account
+    @DeleteMapping("/delete")
+    public ResponseEntity<Void> deleteAccount(@RequestParam String email) {
+        userService.deleteUserAccount(email);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/all-clients")
+    public ResponseEntity<Page<User>> listAllClients(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        // Create a Pageable object for pagination
+        Pageable pageable = PageRequest.of(page, size);
+
+        // Retrieve paginated clients from the service
+        Page<User> users = userService.listAllClients(pageable);
+
+        // Return paginated list of users with CLIENT role
+        return ResponseEntity.ok(users);
+    }
+
 
 
 }

@@ -1,5 +1,6 @@
 package tn.esprit.ecommerce.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,15 +25,9 @@ private final ProductService productService;
     private final ProductRepository productRepository;
 
     @PostMapping("/add-product")
-    public ResponseEntity<Product> addProduct(
-            @RequestParam String name,
-            @RequestParam String description,
-            @RequestParam int quantity,
-            @RequestParam double price,
-            @RequestParam MultipartFile imageFile,
-            @RequestParam Category category) {
+    public ResponseEntity<Product> addProduct(@Valid @RequestBody ProductRequest request) {
 
-        Product product = productService.addProduct(name, description, quantity, price, imageFile, category);
+        Product product = productService.addProduct(request);
         return ResponseEntity.ok(product);
     }
 
@@ -84,6 +79,16 @@ private final ProductService productService;
         );
 
         return ResponseEntity.ok(updatedProduct);
+    }
+    @PostMapping(value = "/upload/{product-id}", consumes = "multipart/form-data")
+    public ResponseEntity<?> uploadProductPicture(
+            @PathVariable("product-id") String productId,
+
+            @RequestPart("file") MultipartFile file
+
+    ) {
+        productService.uploadPhotoForProduct(file, productId);
+        return ResponseEntity.accepted().build();
     }
 
 }

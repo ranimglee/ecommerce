@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 @Builder
 public class User implements UserDetails , Principal {
 
-
     @Id
     private String id;
 
@@ -66,7 +65,6 @@ public class User implements UserDetails , Principal {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.roles.stream().map(r -> new SimpleGrantedAuthority(r.getName())).collect(Collectors.toList());    }
-
     @Override
     public String getName() {
         return email;
@@ -79,5 +77,6 @@ public class User implements UserDetails , Principal {
     public String fullName() {
         return firstName+" "+lastName;
     }
+
 
 }

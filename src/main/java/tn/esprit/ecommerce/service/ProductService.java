@@ -4,15 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import tn.esprit.ecommerce.util.FileNamingUtil;
+import tn.esprit.ecommerce.file.FileStorageService;
+import tn.esprit.ecommerce.mapper.ProductMapper;
+import tn.esprit.ecommerce.request.ProductRequest;
+
 import tn.esprit.ecommerce.entity.Product;
 import tn.esprit.ecommerce.enums.Category;
 import tn.esprit.ecommerce.repository.ProductRepository;
+import tn.esprit.ecommerce.response.ProductResponse;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -21,38 +22,28 @@ import java.util.Optional;
 public class ProductService {
 
     private final ProductRepository productRepository;
-
-    private final FileNamingUtil fileNamingUtil;
-
-    @Value("${uploadProductImages}")
-    private String uploadProductImages;
+    private final FileStorageService fileStorageService;
+    private final ProductMapper productMapper;
 
 
-    public Product addProduct(String name, String description, int quantity,
-                              double price, MultipartFile imageFile,
-                              Category category) {
-        try {
-            // Save the image to the server
-            String fileName = fileNamingUtil.nameFile(imageFile);
-            Path destinationPath = Paths.get(uploadProductImages, fileName);
-            Files.copy(imageFile.getInputStream(), destinationPath);
+    public Product addProduct(ProductRequest request) {
+
+            Product product=productMapper.toProduct(request);
+            return productRepository.save(product);
 
 
-            // Build the new product using the builder pattern
-            Product newProduct = Product.builder()
-                    .name(name)
-                    .description(description)
-                    .quantity(quantity)
-                    .price(price)
-                    .category(category)
-                    .image(fileName)
-                    .build();
+    }
+    public void uploadPhotoForProduct(MultipartFile file, String productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("No product found with ID:: " + productId));
 
-            // Save the product to the database
-            return productRepository.save(newProduct);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to upload image", e);
-        }
+        var productPicture = fileStorageService.saveFile(file);
+        product.setImage(productPicture);
+        productRepository.save(product);
+    }
+    // Lire tous les produits
+    public List<ProductResponse> getAllProduits() {
+        return productRepository.findAll().stream().map(productMapper::toProductResponse).toList();
     }
 
 
@@ -94,20 +85,20 @@ public class ProductService {
             existingProduct.setCategory(category);
         }
 
-        // Handle image upload if a new image is provided
-        if (imageFile != null && !imageFile.isEmpty()) {
-            try {
-                // Generate a new file name and save the image
-                String fileName = fileNamingUtil.nameFile(imageFile);
-                Path destinationPath = Paths.get(uploadProductImages, fileName);
-                Files.copy(imageFile.getInputStream(), destinationPath);
-
-                // Update the product's image field
-                existingProduct.setImage(fileName);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to upload image", e);
-            }
-        }
+//        // Handle image upload if a new image is provided
+//        if (imageFile != null && !imageFile.isEmpty()) {
+//            try {
+//                // Generate a new file name and save the image
+//                String fileName = fileNamingUtil.nameFile(imageFile);
+//                Path destinationPath = Paths.get(uploadProductImages, fileName);
+//                Files.copy(imageFile.getInputStream(), destinationPath);
+//
+//                // Update the product's image field
+//                existingProduct.setImage(fileName);
+//            } catch (IOException e) {
+//                throw new RuntimeException("Failed to upload image", e);
+//            }
+//        }
 
         // Save the updated product to the database
         return productRepository.save(existingProduct);

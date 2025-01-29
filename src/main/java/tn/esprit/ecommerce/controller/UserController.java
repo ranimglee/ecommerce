@@ -1,6 +1,7 @@
 package tn.esprit.ecommerce.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -48,10 +49,34 @@ private final UserService userService;
     ) {
         return ResponseEntity.ok(userService.authenticate(request));
     }
-    // Méthode pour récupérer l'utilisateur connecté à partir du contexte de sécurité
-    public Optional<User> getAuthenticatedUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        return userRepository.findByEmail(username);
+
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestParam @Email String email) {
+        try {
+            userService.resetPassword(email);
+            return ResponseEntity.ok("Password reset link has been sent to your email.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found.");
+        }
     }
+    @GetMapping("/validate-token")
+    public ResponseEntity<String> validateResetToken(@RequestParam String token) {
+        boolean isValid = userService.validateResetToken(token);
+        return isValid ? ResponseEntity.ok("Token is valid. You can reset your password.")
+                : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
+    }
+
+    @PostMapping("/reset-password/confirm")
+    public ResponseEntity<String> confirmResetPassword(@RequestParam String token,
+                                                       @RequestParam String newPassword) {
+        try {
+            userService.updatePassword(token, newPassword);
+            return ResponseEntity.ok("Password has been reset successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
+        }
+    }
+
+
 }

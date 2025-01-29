@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.ecommerce.repository.ProductRepository;
+import tn.esprit.ecommerce.request.ProductRequest;
 import tn.esprit.ecommerce.service.ProductService;
 import tn.esprit.ecommerce.entity.Product;
 import tn.esprit.ecommerce.enums.Category;

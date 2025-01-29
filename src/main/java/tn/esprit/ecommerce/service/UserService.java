@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import tn.esprit.ecommerce.JWT.JwtService;
 import tn.esprit.ecommerce.exception.EmailExistsExecption;
+import tn.esprit.ecommerce.exception.EmailSendingException;
 import tn.esprit.ecommerce.repository.RoleRepository;
 import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.repository.UserRepository;
@@ -21,6 +22,10 @@ import tn.esprit.ecommerce.request.AuthenticationRequest;
 import tn.esprit.ecommerce.request.RegistrationRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.chrono.ChronoLocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +82,7 @@ public class UserService {
 
 
 
-   private void sendConfirmationEmail(String email, String confirmationToken) {
+    private void sendConfirmationEmail(String email, String confirmationToken) {
         MimeMessage message = emailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message);
 
@@ -89,14 +94,22 @@ public class UserService {
             helper.setText("To confirm your account, please click the link below:\n"
                     + "http://localhost:8080/api/v1/auth/confirm-account?token=" + confirmationToken);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            // Throw a custom exception with the error message and the cause
+            throw new EmailSendingException("Failed to send confirmation email to " + email, e);
         }
+
         if (emailSender instanceof JavaMailSenderImpl) {
             JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) emailSender;
             mailSenderImpl.setUsername(emailUsername);
             mailSenderImpl.setPassword(emailAppPassword);
         }
-        emailSender.send(message);
+
+        try {
+            emailSender.send(message);
+        } catch (Exception e) {
+            // Handle failure in sending email (for example network or server issues)
+            throw new EmailSendingException("Error occurred while sending the confirmation email to " + email, e);
+        }
     }
 
 
@@ -122,20 +135,95 @@ public class UserService {
     }
 
     public boolean confirmAccount(String confirmationToken) {
-        // Find the user by the confirmation token
         Optional<User> userOptional = userRepository.findByConfirmationToken(confirmationToken);
 
         if (userOptional.isPresent()) {
-            // Update user's account to confirmed
             User user = userOptional.get();
-            user.setEnabled(true);
-            userRepository.save(user);
 
-            // Optional: You can also remove the confirmation token from the user entity
+            if (user.isEnabled()) {
+                return false; // Account already confirmed
+            }
+
+            user.setEnabled(true);
+            user.setConfirmationToken(null);  // Optionally nullify the token after use
+            userRepository.save(user);
 
             return true; // Account confirmed successfully
         } else {
-            return false; // Invalid confirmation token
+            return false; // Invalid or expired confirmation token
         }
     }
+    public void resetPassword(String username) {
+        Optional<User> userOptional = userRepository.findByEmail(username);
+
+        if (userOptional.isEmpty()) {
+            throw new EmailExistsExecption("Email not found: " + username);
+        }
+
+        User user = userOptional.get();
+        String resetToken = UUID.randomUUID().toString();
+        user.setPasswordResetToken(resetToken);
+        // Set token expiry to 1 hour from now
+        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
+        user.setTokenExpiry(expiryDate);
+        userRepository.save(user);
+
+        sendPasswordResetEmail(user.getEmail(), resetToken);
+    }
+
+
+    private void sendPasswordResetEmail(String email, String resetToken) {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+
+        try {
+            helper.setFrom(emailUsername);
+            helper.setTo(email);
+            helper.setSubject("Password Reset Request");
+            helper.setText("To reset your password, click the link below:\n"
+                    + "http://localhost:8080/api/v1/auth/reset-password?token=" + resetToken);
+        } catch (MessagingException e) {
+            throw new EmailSendingException("Failed to send password reset email", e);
+        }
+
+        emailSender.send(message);
+    }
+
+    public boolean validateResetToken(String token) {
+        User user = (User) userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        // Check if the token expiry date is null
+        if (user.getTokenExpiry() == null) {
+            throw new RuntimeException("Token expiry is not set");
+        }
+
+        // Convert Instant.now() to LocalDateTime to match user.getTokenExpiry() type
+        LocalDateTime now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        // Check if the token has expired
+        if (user.getTokenExpiry().isBefore(now)) {
+            throw new RuntimeException("Token expired");
+        }
+
+        return true;
+    }
+
+
+    public void updatePassword(String token, String newPassword) {
+        User user = (User) userRepository.findByPasswordResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+        LocalDateTime now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
+
+        // Check if the token has expired
+        if (user.getTokenExpiry().isBefore(now)) {
+            throw new RuntimeException("Token expired");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword)); // Hachage du mot de passe
+        user.setPasswordResetToken(null);
+        user.setTokenExpiry(null);
+        userRepository.save(user);
+    }
+
+
 }

@@ -54,21 +54,18 @@ public class ProductService {
             throw new RuntimeException("Failed to upload image", e);
         }
     }
-    // Lire tous les produits
-    public List<Product> getAllProduits() {
-        return productRepository.findAll();
-    }
 
-    public boolean deleteProduit(String id) {
-        Optional<Product> produitOpt = productRepository.findById(id);
-        if (produitOpt.isPresent()) {
-            productRepository.delete(produitOpt.get());
+
+    public boolean deleteProduct(String id) {
+        Optional<Product> productOpt = productRepository.findById(id);
+        if (productOpt.isPresent()) {
+            productRepository.delete(productOpt.get());
             return true;
         }
         return false;
     }
 
-    public Optional<Product> getProduitById(String id) {
+    public Optional<Product> getProductById(String id) {
         return productRepository.findById(id);
     }
 

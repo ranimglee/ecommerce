@@ -18,10 +18,15 @@ public class CartItem {
         @DBRef
         private Product product;
 
+
         private int quantity;
 
         public double getSousTotal() {
-            return product.getPrice() * quantity;
+                if (product == null) {
+                        return 0.0;  // or handle the null case appropriately
+                }
+                return product.getPrice() * quantity;  // assuming you have quantity in CartItem
         }
+
 
 }

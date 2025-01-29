@@ -1,23 +1,27 @@
 package tn.esprit.ecommerce.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tn.esprit.ecommerce.repository.ProductRepository;
 import tn.esprit.ecommerce.service.ProductService;
 import tn.esprit.ecommerce.entity.Product;
 import tn.esprit.ecommerce.enums.Category;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping( "produit")
+@RequestMapping( "product")
 @RequiredArgsConstructor
 public class ProductController {
 
 private final ProductService productService;
+    private final ProductRepository productRepository;
 
     @PostMapping("/add-product")
     public ResponseEntity<Product> addProduct(
@@ -33,22 +37,27 @@ private final ProductService productService;
     }
 
     @GetMapping("/get-all-products")
-    public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProduits();
-        return new ResponseEntity<>(products, HttpStatus.OK);
+    public Page<Product> getAllProducts(@RequestParam(defaultValue = "0") int page,
+                                        @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> productPage = productRepository.findAll(pageable);
+        System.out.println("Returned Page: " + productPage);
+        return productPage;
     }
+
+
 
     @GetMapping("get-product-by-id/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable String id) {
-        Optional<Product> produitOpt = productService.getProduitById(id);
-        return produitOpt.map(produit -> new ResponseEntity<>(produit, HttpStatus.OK))
+        Optional<Product> productOpt = productService.getProductById(id);
+        return productOpt.map(product -> new ResponseEntity<>(product, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
 
     @DeleteMapping("delete-product/{id}")
-    public ResponseEntity<Void> deleteProduit(@PathVariable String id) {
-        boolean isDeleted = productService.deleteProduit(id);
+    public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
+        boolean isDeleted = productService.deleteProduct(id);
         return isDeleted ? new ResponseEntity<>(HttpStatus.NO_CONTENT)
                 : new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }

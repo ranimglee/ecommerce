@@ -24,6 +24,7 @@ public class Order {
     private Double total;
 
     private OrderStatus status;
+    private String paymentIntentId;
 
     @DBRef
     private User user;
@@ -39,4 +40,6 @@ public class Order {
                     .sum();
         }
     }
+
+
 }

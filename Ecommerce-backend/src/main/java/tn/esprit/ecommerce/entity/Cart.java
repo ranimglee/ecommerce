@@ -20,6 +20,8 @@ public class Cart {
 
     @DBRef
     private User user;
+    private boolean isOrder; // Indicates if this cart has been turned into an order
+
 
     @DBRef
     private List<CartItem> cartItems = new ArrayList<>();  // Initialize as an empty list

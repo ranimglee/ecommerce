@@ -1,10 +1,13 @@
 package tn.esprit.ecommerce.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tn.esprit.ecommerce.request.ProductRequest;
+import tn.esprit.ecommerce.response.ProductResponse;
 import tn.esprit.ecommerce.service.ProductService;
 import tn.esprit.ecommerce.entity.Product;
 import tn.esprit.ecommerce.enums.Category;
@@ -20,22 +23,15 @@ public class ProductController {
 private final ProductService productService;
 
     @PostMapping("/add-product")
-    public ResponseEntity<Product> addProduct(
-            @RequestParam String name,
-            @RequestParam String description,
-            @RequestParam int quantity,
-            @RequestParam double price,
-            @RequestParam MultipartFile imageFile,
-            @RequestParam Category category) {
+    public ResponseEntity<Product> addProduct(@Valid @RequestBody ProductRequest request) {
 
-        Product product = productService.addProduct(name, description, quantity, price, imageFile, category);
+        Product product = productService.addProduct(request);
         return ResponseEntity.ok(product);
     }
 
     @GetMapping("/get-all-products")
-    public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = productService.getAllProduits();
-        return new ResponseEntity<>(products, HttpStatus.OK);
+    public ResponseEntity<List<ProductResponse>> getAllProducts() {
+      return ResponseEntity.ok(productService.getAllProduits());
     }
 
     @GetMapping("get-product-by-id/{id}")
@@ -75,6 +71,16 @@ private final ProductService productService;
         );
 
         return ResponseEntity.ok(updatedProduct);
+    }
+    @PostMapping(value = "/upload/{product-id}", consumes = "multipart/form-data")
+    public ResponseEntity<?> uploadProductPicture(
+            @PathVariable("product-id") String productId,
+
+            @RequestPart("file") MultipartFile file
+
+    ) {
+        productService.uploadPhotoForProduct(file, productId);
+        return ResponseEntity.accepted().build();
     }
 
 }

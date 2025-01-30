@@ -17,14 +17,13 @@ import java.util.List;
 public class Cart {
     @Id
     private String id;
-
     @DBRef
     private User user;
-    private boolean isOrder; // Indicates if this cart has been turned into an order
+    private boolean isOrder;
 
 
     @DBRef
-    private List<CartItem> cartItems = new ArrayList<>();  // Initialize as an empty list
+    private List<CartItem> cartItems = new ArrayList<>(); // Initialize as an empty list
 
     public double getTotal() {
         return cartItems.stream()

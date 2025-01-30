@@ -1,7 +1,6 @@
 package tn.esprit.ecommerce.controller;
 
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,35 +21,42 @@ public class CartController {
     private final UserService userService;
     private final CartRepository cartRepository;
 
+
     @PostMapping("/add-to-cart")
     public Cart addProductToCart(@RequestParam String productId, @RequestParam int quantity) {
-        User user = getAuthenticatedUser(); // Get the authenticated user
+        User user = getAuthenticatedUser();
         if (user == null) {
-            throw new RuntimeException("User not found"); // Throw error if user not found
+            throw new RuntimeException("User not found");
         }
 
-        // Validate productId and quantity from request
+        // Validate request parameters
         if (productId == null || productId.isEmpty()) {
-            throw new IllegalArgumentException("The productId is required"); // Validate productId is not empty
+            throw new IllegalArgumentException("The productId is required");
         }
         if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than zero"); // Validate quantity is positive
+            throw new IllegalArgumentException("Quantity must be greater than zero");
         }
 
         try {
-            // Call the service to add the product to the cart
             Cart updatedCart = cartService.addProductToCart(user, productId, quantity);
             if (updatedCart == null) {
-                throw new RuntimeException("Failed to add product to cart"); // Handle failure in adding to cart
+                throw new RuntimeException("Failed to add product to cart");
             }
-            return updatedCart; // Return the updated cart
+            return updatedCart;
         } catch (Exception e) {
-            // Log error and rethrow the exception with a message
             System.err.println("Error adding product to cart: " + e.getMessage());
             throw new RuntimeException("Error adding product to cart", e);
         }
     }
 
+    /**
+     * Updates the quantity of a specific product in the authenticated user's cart.
+     *
+     * @param productId The ID of the product to update.
+     * @param quantity The new quantity of the product.
+     * @return The updated Cart after modifying the quantity.
+     * @throws RuntimeException if the user is not authenticated.
+     */
     @PutMapping("/update-cart")
     public Cart updateProductQuantity(@RequestParam String productId, @RequestParam int quantity) {
         User user = getAuthenticatedUser();
@@ -60,7 +66,14 @@ public class CartController {
         return cartService.updateProductQuantity(user, productId, quantity);
     }
 
-   @DeleteMapping("/remove-from-cart")
+    /**
+     * Removes a product from the authenticated user's cart.
+     *
+     * @param productId The ID of the product to remove.
+     * @return The updated Cart after removing the product.
+     * @throws RuntimeException if the user is not authenticated.
+     */
+    @DeleteMapping("/remove-from-cart")
     public Cart removeProductFromCart(@RequestParam String productId) {
         User user = getAuthenticatedUser();
         if (user == null) {
@@ -69,8 +82,11 @@ public class CartController {
         return cartService.removeProductFromCart(user, productId);
     }
 
-
-    // Method to retrieve the authenticated user
+    /**
+     * Retrieves the authenticated user from the security context.
+     *
+     * @return The authenticated User object, or null if authentication fails.
+     */
     public User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -79,11 +95,18 @@ public class CartController {
         String username = authentication.getName();
         return userService.findByUsername(username);
     }
+
+    /**
+     * Retrieves the authenticated user's cart.
+     *
+     * @param loggedInUser The currently authenticated user.
+     * @return ResponseEntity containing the user's Cart.
+     * @throws RuntimeException if the cart is not found.
+     */
     @GetMapping("/view-cart")
     public ResponseEntity<Cart> viewCart(@AuthenticationPrincipal User loggedInUser) {
         Cart cart = cartRepository.findByUser(loggedInUser)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
         return ResponseEntity.ok(cart);
     }
-
 }

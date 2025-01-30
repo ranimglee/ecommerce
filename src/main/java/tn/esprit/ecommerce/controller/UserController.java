@@ -1,16 +1,12 @@
 package tn.esprit.ecommerce.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import tn.esprit.ecommerce.entity.User;
 import tn.esprit.ecommerce.request.AuthenticationRequest;
@@ -18,11 +14,7 @@ import tn.esprit.ecommerce.request.UserProfileRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
 import tn.esprit.ecommerce.request.RegistrationRequest;
 import tn.esprit.ecommerce.repository.UserRepository;
-import tn.esprit.ecommerce.response.UserProfileResponse;
 import tn.esprit.ecommerce.service.UserService;
-
-import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping( "auth")
@@ -58,32 +50,6 @@ private final UserService userService;
     }
 
 
-    @PostMapping("/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestParam @Email String email) {
-        try {
-            userService.resetPassword(email);
-            return ResponseEntity.ok("Password reset link has been sent to your email.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found.");
-        }
-    }
-    @GetMapping("/validate-token")
-    public ResponseEntity<String> validateResetToken(@RequestParam String token) {
-        boolean isValid = userService.validateResetToken(token);
-        return isValid ? ResponseEntity.ok("Token is valid. You can reset your password.")
-                : ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
-    }
-
-    @PostMapping("/reset-password/confirm")
-    public ResponseEntity<String> confirmResetPassword(@RequestParam String token,
-                                                       @RequestParam String newPassword) {
-        try {
-            userService.updatePassword(token, newPassword);
-            return ResponseEntity.ok("Password has been reset successfully.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired token.");
-        }
-    }
 
     @PutMapping("/update-profile")
     public ResponseEntity<User> updateProfile(@RequestBody UserProfileRequest request) {
@@ -121,6 +87,33 @@ private final UserService userService;
         return ResponseEntity.ok(users);
     }
 
+    // Step 1: Request OTP for password reset
+    @PostMapping("/request-otp")
+    public ResponseEntity<String> requestOTP(@RequestParam String email) {
+        userService.sendPasswordResetOTP(email);
+        return ResponseEntity.ok("OTP sent to your email.");
+    }
 
+    // Step 2: Validate OTP
+    @PostMapping("/validate-otp")
+    public ResponseEntity<String> validateOTP(
+            @RequestParam String email,
+            @RequestParam String otp) {
+        boolean isValid = userService.validateOTP(email, otp);
+        if (isValid) {
+            return ResponseEntity.ok("OTP validated successfully.");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid OTP.");
+        }
+    }
+
+    // Step 3: Update password
+    @PostMapping("/update-password")
+    public ResponseEntity<String> updatePassword(
+            @RequestParam String email,
+            @RequestParam String newPassword) {
+        userService.updatePassword(email, newPassword);
+        return ResponseEntity.ok("Password updated successfully.");
+    }
 
 }

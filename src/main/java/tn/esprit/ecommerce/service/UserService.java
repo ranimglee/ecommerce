@@ -16,7 +16,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import tn.esprit.ecommerce.JWT.JwtService;
+import org.thymeleaf.TemplateEngine;
+import tn.esprit.ecommerce.security.JWT.JwtService;
 import tn.esprit.ecommerce.exception.EmailExistsExecption;
 import tn.esprit.ecommerce.exception.EmailSendingException;
 import tn.esprit.ecommerce.repository.RoleRepository;
@@ -26,16 +27,10 @@ import tn.esprit.ecommerce.request.AuthenticationRequest;
 import tn.esprit.ecommerce.request.RegistrationRequest;
 import tn.esprit.ecommerce.request.UserProfileRequest;
 import tn.esprit.ecommerce.response.AuthenticationResponse;
-import tn.esprit.ecommerce.response.UserProfileResponse;
+import org.thymeleaf.context.Context;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.chrono.ChronoLocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +39,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private static final int OTP_LENGTH = 6;
+    private static final int OTP_EXPIRY_MINUTES = 5;
     private final JavaMailSender emailSender;
 
     @Value("${spring.mail.username}")
@@ -54,6 +50,8 @@ public class UserService {
     private String emailAppPassword;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+
+    private final TemplateEngine templateEngine;
 
 
     public void register(@Valid RegistrationRequest request) {
@@ -78,7 +76,11 @@ public class UserService {
 
         userRepository.save(user);
         // Send confirmation email
-        sendConfirmationEmail(user.getEmail(), confirmationToken);
+        try {
+            sendConfirmationEmail(user.getEmail(), confirmationToken);
+        } catch (MessagingException e) {
+            throw new EmailSendingException("Failed to send confirmation email to " + user.getEmail(), e);
+        }
     }
 
 
@@ -88,36 +90,41 @@ public class UserService {
 
 
 
-    private void sendConfirmationEmail(String email, String confirmationToken) {
+    private void sendConfirmationEmail(String email, String confirmationToken) throws MessagingException {
         MimeMessage message = emailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-
+        MimeMessageHelper helper = new MimeMessageHelper(message, true); // true for multipart email (for HTML support)
         try {
-            // Configure the helper with the sender email properties
+            // Prepare the Thymeleaf context
+            Context context = new Context();
+            context.setVariable("confirmationToken", confirmationToken);
+          //  context.setVariable("user", user);
+
+            // Generate HTML content using Thymeleaf template
+            String htmlContent = templateEngine.process("confirmation-email", context); // Name of the template file
+
+            // Configure the email properties
             helper.setFrom(emailUsername);
+
             helper.setTo(email);
             helper.setSubject("Confirm your account");
-            helper.setText("To confirm your account, please click the link below:\n"
-                    + "http://localhost:8080/api/v1/auth/confirm-account?token=" + confirmationToken);
-        } catch (MessagingException e) {
-            // Throw a custom exception with the error message and the cause
+            helper.setText(htmlContent, true);
+            if (emailSender instanceof JavaMailSenderImpl mailSenderImpl) {
+                mailSenderImpl.setUsername(emailUsername);
+                mailSenderImpl.setPassword(emailAppPassword);
+            }
+
+            try {
+                emailSender.send(message);
+            } catch (Exception e) {
+                // Handle failure in sending email (for example network or server issues)
+                throw new EmailSendingException("Error occurred while sending the confirmation email to " + email, e);
+            }
+        } catch (Exception e) {
             throw new EmailSendingException("Failed to send confirmation email to " + email, e);
         }
 
-        if (emailSender instanceof JavaMailSenderImpl) {
-            JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) emailSender;
-            mailSenderImpl.setUsername(emailUsername);
-            mailSenderImpl.setPassword(emailAppPassword);
-        }
 
-        try {
-            emailSender.send(message);
-        } catch (Exception e) {
-            // Handle failure in sending email (for example network or server issues)
-            throw new EmailSendingException("Error occurred while sending the confirmation email to " + email, e);
-        }
     }
-
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         var auth=authenticationManager.authenticate(
@@ -141,10 +148,12 @@ public class UserService {
     }
 
     public boolean confirmAccount(String confirmationToken) {
+        System.out.println("Received token: " + confirmationToken); // Log the received token
         Optional<User> userOptional = userRepository.findByConfirmationToken(confirmationToken);
 
         if (userOptional.isPresent()) {
             User user = userOptional.get();
+            System.out.println("Stored token: " + user.getConfirmationToken()); // Log the stored token
 
             if (user.isEnabled()) {
                 return false; // Account already confirmed
@@ -159,77 +168,7 @@ public class UserService {
             return false; // Invalid or expired confirmation token
         }
     }
-    public void resetPassword(String username) {
-        Optional<User> userOptional = userRepository.findByEmail(username);
 
-        if (userOptional.isEmpty()) {
-            throw new EmailExistsExecption("Email not found: " + username);
-        }
-
-        User user = userOptional.get();
-        String resetToken = UUID.randomUUID().toString();
-        user.setPasswordResetToken(resetToken);
-        // Set token expiry to 1 hour from now
-        LocalDateTime expiryDate = LocalDateTime.now().plusHours(1);
-        user.setTokenExpiry(expiryDate);
-        userRepository.save(user);
-
-        sendPasswordResetEmail(user.getEmail(), resetToken);
-    }
-
-
-    private void sendPasswordResetEmail(String email, String resetToken) {
-        MimeMessage message = emailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-
-        try {
-            helper.setFrom(emailUsername);
-            helper.setTo(email);
-            helper.setSubject("Password Reset Request");
-            helper.setText("To reset your password, click the link below:\n"
-                    + "http://localhost:8080/api/v1/auth/reset-password?token=" + resetToken);
-        } catch (MessagingException e) {
-            throw new EmailSendingException("Failed to send password reset email", e);
-        }
-
-        emailSender.send(message);
-    }
-
-    public boolean validateResetToken(String token) {
-        User user = (User) userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
-
-        // Check if the token expiry date is null
-        if (user.getTokenExpiry() == null) {
-            throw new RuntimeException("Token expiry is not set");
-        }
-
-        // Convert Instant.now() to LocalDateTime to match user.getTokenExpiry() type
-        LocalDateTime now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-        // Check if the token has expired
-        if (user.getTokenExpiry().isBefore(now)) {
-            throw new RuntimeException("Token expired");
-        }
-
-        return true;
-    }
-
-
-    public void updatePassword(String token, String newPassword) {
-        User user = (User) userRepository.findByPasswordResetToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
-        LocalDateTime now = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
-
-        // Check if the token has expired
-        if (user.getTokenExpiry().isBefore(now)) {
-            throw new RuntimeException("Token expired");
-        }
-        user.setPassword(passwordEncoder.encode(newPassword)); // Hachage du mot de passe
-        user.setPasswordResetToken(null);
-        user.setTokenExpiry(null);
-        userRepository.save(user);
-    }
 
     public User updateUserProfile(UserProfileRequest request) {
         // Retrieve the currently authenticated user’s email from SecurityContext
@@ -274,5 +213,90 @@ public class UserService {
         return userRepository.findByRolesContaining(clientRole, pageable);
     }
 
+
+
+
+
+    // Step 1: Generate and send OTP
+    public void sendPasswordResetOTP(String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isEmpty()) {
+            throw new EmailExistsExecption("Email not found: " + email);
+        }
+
+        User user = userOptional.get();
+        String otp = generateOTP();
+        LocalDateTime expiryDate = LocalDateTime.now().plusMinutes(OTP_EXPIRY_MINUTES);
+
+        user.setOtp(otp);
+        user.setOtpExpiry(expiryDate);
+        userRepository.save(user);
+
+        sendOTPEmail(user.getEmail(), otp);
+    }
+
+    // Step 2: Generate a random OTP
+    private String generateOTP() {
+        Random random = new Random();
+        StringBuilder otp = new StringBuilder();
+        for (int i = 0; i < OTP_LENGTH; i++) {
+            otp.append(random.nextInt(10)); // Append a random digit (0-9)
+        }
+        return otp.toString();
+    }
+
+    // Step 3: Send OTP via email
+    private void sendOTPEmail(String email, String otp) {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+
+        try {
+            helper.setFrom(emailUsername);
+            helper.setTo(email);
+            helper.setSubject("Password Reset OTP");
+            helper.setText("Your OTP for password reset is: " + otp + "\nThis OTP is valid for " + OTP_EXPIRY_MINUTES + " minutes.");
+        } catch (MessagingException e) {
+            throw new EmailSendingException("Failed to send OTP email", e);
+        }
+
+        emailSender.send(message);
+    }
+
+    // Step 4: Validate OTP
+    public boolean validateOTP(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email not found: " + email));
+
+        if (user.getOtp() == null || user.getOtpExpiry() == null) {
+            throw new RuntimeException("OTP not generated or expired");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (user.getOtpExpiry().isBefore(now)) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        if (!user.getOtp().equals(otp)) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        // Clear OTP after successful validation
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+
+        return true; // OTP is valid
+    }
+
+    // Step 5: Update password
+    public void updatePassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email not found: " + email));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 
 }

@@ -1,15 +1,20 @@
 package tn.esprit.ecommerce.service;
 
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tn.esprit.ecommerce.entity.Cart;
 import tn.esprit.ecommerce.entity.CartItem;
 import tn.esprit.ecommerce.entity.Product;
+import tn.esprit.ecommerce.exception.CartNotFoundException;
+import tn.esprit.ecommerce.exception.ProductNotFoundException;
 import tn.esprit.ecommerce.repository.CartItemRepository;
 import tn.esprit.ecommerce.repository.CartRepository;
 import tn.esprit.ecommerce.repository.ProductRepository;
 import tn.esprit.ecommerce.entity.User;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -20,59 +25,53 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductRepository productRepository;
 
+    /**
+     * Adds a product to the authenticated user's cart.
+     *
+     * @param user       The authenticated user.
+     * @param productId  The ID of the product to be added.
+     * @param quantity   The quantity of the product to add.
+     * @return The updated Cart after adding the product.
+     * @throws ProductNotFoundException if the product is not found.
+     * @throws CartNotFoundException    if the cart is not found.
+     */
+    @Transactional
     public Cart addProductToCart(User user, String productId, int quantity) {
-        // Ensure the cart exists or create a new one if not found
-        Cart cart = cartRepository.findByUser(user)
-                .orElseGet(() -> createNewCart(user));
+        validateInput(user, productId, quantity);
 
-        // Validate Product - ensure product exists
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found with ID: " + productId));
+        Cart cart = getOrCreateCart(user);
+        Product product = getProductById(productId);
 
-        // Validate Product ID - it shouldn't be null
-        if (product.getId() == null) {
-            throw new IllegalStateException("Product ID cannot be null for product: " + product);
-        }
+        Optional<CartItem> existingItem = findCartItemByProduct(cart, productId);
 
-        // Check if CartItem already exists, ensuring we are not dealing with null CartItems or Products
-        Optional<CartItem> existingItem = cart.getCartItems().stream()
-                .filter(item -> item != null && item.getProduct() != null && item.getProduct().getId().equals(productId))
-                .findFirst();
-
-        // Update existing item or add a new one
         if (existingItem.isPresent()) {
-            CartItem item = existingItem.get();
-            item.setQuantity(item.getQuantity() + quantity); // Increase quantity if item already exists
-            cartItemRepository.save(item);
+            updateCartItemQuantity(existingItem.get(), quantity);
         } else {
-            // Create a new CartItem if not found
-            CartItem newItem = CartItem.builder()
-                    .product(product)
-                    .quantity(quantity)
-                    .build();
-
-            // Validate new CartItem's Product ID
-            if (newItem.getProduct() == null || newItem.getProduct().getId() == null) {
-                throw new IllegalStateException("CartItem must reference a valid Product with a non-null ID");
-            }
-
-            cart.getCartItems().add(newItem); // Add the new item to the cart
+            CartItem newItem = createCartItem(product, quantity);
+            cart.getCartItems().add(newItem);
             cartItemRepository.save(newItem);
         }
 
-        // Save the updated cart
         return cartRepository.save(cart);
     }
 
-
+    /**
+     * Updates the quantity of a product in the cart.
+     *
+     * @param user        The authenticated user.
+     * @param productId   The ID of the product to update.
+     * @param newQuantity The new quantity of the product.
+     * @return The updated Cart.
+     * @throws CartNotFoundException    if the cart is not found.
+     * @throws ProductNotFoundException if the product is not found in the cart.
+     */
+    @Transactional
     public Cart updateProductQuantity(User user, String productId, int newQuantity) {
-        Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Panier non trouvé"));
+        validateInput(user, productId, newQuantity);
 
-        CartItem item = cart.getCartItems().stream()
-                .filter(cartItem -> cartItem.getProduct().getId().equals(productId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Article non trouvé dans le panier"));
+        Cart cart = getCartByUser(user);
+        CartItem item = findCartItemByProduct(cart, productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found in cart: " + productId));
 
         item.setQuantity(newQuantity);
         cartItemRepository.save(item);
@@ -81,14 +80,22 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
+    /**
+     * Removes a product from the cart.
+     *
+     * @param user      The authenticated user.
+     * @param productId The ID of the product to remove.
+     * @return The updated Cart.
+     * @throws CartNotFoundException    if the cart is not found.
+     * @throws ProductNotFoundException if the product is not found in the cart.
+     */
+    @Transactional
     public Cart removeProductFromCart(User user, String productId) {
-        Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Panier non trouvé"));
+        validateInput(user, productId, 1); // Quantity is irrelevant here
 
-        CartItem item = cart.getCartItems().stream()
-                .filter(cartItem -> cartItem.getProduct().getId().equals(productId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Article non trouvé dans le panier"));
+        Cart cart = getCartByUser(user);
+        CartItem item = findCartItemByProduct(cart, productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found in cart: " + productId));
 
         cart.getCartItems().remove(item);
         cartItemRepository.delete(item);
@@ -97,14 +104,56 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
+    /**
+     * Creates a new cart for the user.
+     *
+     * @param user The authenticated user.
+     * @return The newly created Cart.
+     */
     private Cart createNewCart(User user) {
-        Cart cart = Cart.builder()
-                .user(user)
-                .build();
-        return cartRepository.save(cart);
+        Cart newCart = new Cart();
+        newCart.setUser(user);
+        newCart.setCartItems(new ArrayList<>());
+        return cartRepository.save(newCart);
     }
 
+    // Helper Methods
 
+    private void validateInput(User user, String productId, int quantity) {
+        if (user == null || productId == null || quantity <= 0) {
+            throw new IllegalArgumentException("Invalid input parameters");
+        }
+    }
 
+    private Cart getOrCreateCart(User user) {
+        return cartRepository.findByUser(user).orElseGet(() -> createNewCart(user));
+    }
 
+    private Cart getCartByUser(User user) {
+        return cartRepository.findByUser(user)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + user.getId()));
+    }
+
+    private Product getProductById(String productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
+    }
+
+    private Optional<CartItem> findCartItemByProduct(Cart cart, String productId) {
+        return cart.getCartItems().stream()
+                .filter(item -> item.getProduct().getId().equals(productId))
+                .findFirst();
+    }
+
+    private void updateCartItemQuantity(CartItem item, int quantity) {
+        item.setQuantity(item.getQuantity() + quantity);
+        cartItemRepository.save(item);
+    }
+
+    private CartItem createCartItem(Product product, int quantity) {
+        return CartItem.builder()
+                .product(product)
+                .quantity(quantity)
+                .build();
+    }
 }

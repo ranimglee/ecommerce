@@ -31,8 +31,8 @@ public class User implements UserDetails , Principal {
     private String password;
     private String confirmationToken;
     private boolean enabled;
-    private String passwordResetToken;
-    private LocalDateTime tokenExpiry;
+    private String otp;
+    private LocalDateTime otpExpiry;
 
     @DBRef
     private List<Role> roles;

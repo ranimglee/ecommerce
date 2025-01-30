@@ -1,4 +1,4 @@
-package tn.esprit.ecommerce.JWT;
+package tn.esprit.ecommerce.security.JWT;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

@@ -14,7 +14,5 @@ public interface UserRepository extends MongoRepository<User, String> {
     Optional<User> findByConfirmationToken(String confirmationToken);
 
 
-    Optional<Object> findByPasswordResetToken(String token);
-
     Page<User> findByRolesContaining(Role role, Pageable pageable);
 }

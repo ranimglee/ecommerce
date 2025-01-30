@@ -1,4 +1,4 @@
-package tn.esprit.ecommerce.JWT;
+package tn.esprit.ecommerce.security.JWT;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

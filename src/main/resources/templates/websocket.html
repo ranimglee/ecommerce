@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Client</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>Product Notifications</h1>
+<ul id="notifications"></ul>
+
+<script>
+    var socket = new SockJS('http://localhost:8080/api/v1/ws');
+    var stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function(frame) {
+        console.log('Connected: ' + frame);
+        stompClient.subscribe('/topic/products', function(message) {
+            var notifications = document.getElementById('notifications');
+            var notification = document.createElement('li');
+            notification.appendChild(document.createTextNode(message.body));
+            notifications.appendChild(notification);
+        });
+    });
+</script>
+</body>
+</html>

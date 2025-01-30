@@ -2,6 +2,7 @@ package tn.esprit.ecommerce.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tn.esprit.ecommerce.file.FileStorageService;
@@ -24,15 +25,21 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final FileStorageService fileStorageService;
     private final ProductMapper productMapper;
+    private final SimpMessagingTemplate messagingTemplate;
+
 
 
     public Product addProduct(ProductRequest request) {
+        Product product = productMapper.toProduct(request);
 
-            Product product=productMapper.toProduct(request);
-            return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
 
+        messagingTemplate.convertAndSend("/topic/products", "New product added: " + request.getName());
 
+        // Return the saved product
+        return savedProduct;
     }
+
     public void uploadPhotoForProduct(MultipartFile file, String productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("No product found with ID:: " + productId));
@@ -41,7 +48,7 @@ public class ProductService {
         product.setImage(productPicture);
         productRepository.save(product);
     }
-    // Lire tous les produits
+
     public List<ProductResponse> getAllProduits() {
         return productRepository.findAll().stream().map(productMapper::toProductResponse).toList();
     }

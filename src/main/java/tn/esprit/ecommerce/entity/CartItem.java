@@ -5,6 +5,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.logging.Logger;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -21,12 +23,21 @@ public class CartItem {
 
         private int quantity;
 
+        private static final Logger logger = Logger.getLogger(CartItem.class.getName());
+
+
+        /**
+         * Calculates the subtotal price for this cart item.
+         *
+         * @return The subtotal price based on the product price and quantity.
+         */
         public double getSousTotal() {
                 if (product == null) {
-                        return 0.0;  // or handle the null case appropriately
+                        logger.warning("Product is null, returning 0.0");
+                        return 0.0;
                 }
-                return product.getPrice() * quantity;  // assuming you have quantity in CartItem
+
+                double price = product.getPrice();
+                return price * quantity;
         }
-
-
 }

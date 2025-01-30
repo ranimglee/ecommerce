@@ -26,9 +26,5 @@ public class OrderLine {
     private Order order;
 
 
-    public void calculateSousTotal() {
-        if (product != null) {
-            this.sousTotal = this.quantity * product.getPrice();
-        }
-    }
+
 }
